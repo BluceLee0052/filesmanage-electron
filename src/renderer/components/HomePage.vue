@@ -12,18 +12,24 @@
             <i class="el-icon-upload"></i> 导入管理</span>
           <import-page></import-page>
         </el-tab-pane>
+        <el-tab-pane name="3">
+          <span slot="label">
+            <i class="el-icon-setting"></i> 表单配置</span>
+          <form-config-page></form-config-page>
+        </el-tab-pane>
       </el-tabs>
     </el-main>
   </el-container>
 </template>
 
 <script>
-import SearchPage from './SearchPage/SearchPage'
-import ImportPage from './ImportPage/ImportPage'
+import SearchPage from './SearchPage'
+import ImportPage from './ImportPage'
+import FormConfigPage from './FormConfigPage'
 
 export default {
   name: 'landing-page',
-  components: { SearchPage, ImportPage },
+  components: { SearchPage, ImportPage, FormConfigPage },
   data () {
     return {
       activeName: '1'

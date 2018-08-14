@@ -5,6 +5,12 @@
         <el-option v-for="drive in drives" :key="drive" :label="drive+':\\'" :value="drive"></el-option>
       </el-select>
     </el-form-item>
+    <el-form-item label="层次" prop="level">
+      <el-input-number v-model="ruleForm.level" :min="1" :max="10"></el-input-number>
+      <span class="item_flag">
+        <i class="el-icon-warning"></i> 代表以第几层的文件夹名称，作为名称</span>
+    </el-form-item>
+    <el-form-item></el-form-item>
     <el-form-item label="导入文件" prop="selectFilePaths">
       <div id="filesDiv">
         <div id="dropbox" @mouseout="focusFilesDiv=false" @mouseover="focusFilesDiv=true" @click="selectFiles($event)">将文件或文件夹拖到此处（或点击选择）</div>
@@ -40,10 +46,12 @@ export default {
       files: [],
       ruleForm: {
         drive: 'A',
+        level: 1,
         selectFilePaths: ''
       },
       rules: {
         drive: [{ required: true, message: '请选择盘符', trigger: 'change' }],
+        level: [{ required: true, message: '请选择层次', trigger: 'change' }],
         selectFilePaths: [{ required: true, message: ' ', trigger: 'change' }]
       }
     }
@@ -134,13 +142,16 @@ export default {
       })
     },
     _wrapFileObj ({ size = 0, path = '', fileName = '' }) { // 封装文件对象
+      const dir = path.split(pathUtil.sep)
+      const name = dir[this.ruleForm.level]
       return {
         drive: this.ruleForm.drive,
         size: size,
-        name: fileName.substring(0, fileName.lastIndexOf('.')),
-        // fileName: fileName,
-        path: path.substring(2), // 去掉盘符 如 D:\\桌面\\text.txt => \\桌面\\text.txt
-        ext: path.substring(path.lastIndexOf('.'))
+        // name: fileName.substring(0, fileName.lastIndexOf('.')),
+        name: name,
+        fileName: fileName,
+        path: pathUtil.dirname(this.ruleForm.drive + path.substring(1)), // 去掉盘符 如 D:\\桌面\\text.txt => \\桌面
+        ext: pathUtil.extname(path)
       }
     },
     _openFullScreen (isOpen) { // 打开全屏遮罩
@@ -255,5 +266,16 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
+}
+
+.item_flag {
+  color: lightblue;
+  font-size: 12px;
+  line-height: 1;
+  padding-top: 4px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 3px;
 }
 </style>

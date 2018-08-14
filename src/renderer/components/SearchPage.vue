@@ -3,6 +3,7 @@
     <el-input placeholder="请输入内容" v-model="search.content" @focus="listenerEnter(true)" @blur="listenerEnter(false)" class="input-with-select">
       <el-select v-model="search.type" slot="prepend" placeholder="请选择">
         <el-option label="名称" value="name"></el-option>
+        <el-option label="文件名" value="fileName"></el-option>
       </el-select>
       <el-button slot="append" icon="el-icon-search" @click="searchBtn()"></el-button>
     </el-input>
@@ -109,7 +110,6 @@ export default {
       } else {
         condition[this.search.type] = new RegExp(`${this.search.content}`)
       }
-
       this.$db.count(condition, function (e, count) {
         that.page.total = count
       })
