@@ -13,7 +13,7 @@
     <el-form-item></el-form-item>
     <el-form-item label="导入文件" prop="selectFilePaths">
       <div id="filesDiv">
-        <div id="dropbox" @mouseout="focusFilesDiv=false" @mouseover="focusFilesDiv=true" @click="selectFiles($event)">将文件或文件夹拖到此处（或点击选择）</div>
+        <div id="dropbox" @mouseout="focusFilesDiv=false" @mouseover="focusFilesDiv=true" @click.prevent="selectFiles($event)">将文件或文件夹拖到此处（或点击选择）</div>
         <input type="file" id="selectFiles" @change="handleSelectFiles($event)" multiple webkitdirectory />
       </div>
       <div id="filesPathDiv">
@@ -96,8 +96,6 @@ export default {
       return false
     },
     selectFiles (e) { // 点击选择文件
-      e.stopPropagation()
-      e.preventDefault()
       document.querySelector('#selectFiles').click()
     },
     handleSelectFiles (e) { // 处理选择或拖拽的文件
