@@ -110,7 +110,7 @@ export default {
       } else {
         condition[this.search.type] = new RegExp(`${this.search.content}`)
       }
-      this.$db.count(condition, function (e, count) {
+      this.$db.count(condition, function (wrong, count) {
         that.page.total = count
       })
 
@@ -118,7 +118,7 @@ export default {
         .sort(!sort ? { createTime: -1 } : sort)
         .skip((this.page.curPage - 1) * this.page.pageSize)
         .limit(this.page.pageSize)
-        .exec(function (e, docs) {
+        .exec(function (wrong, docs) {
           that.page.datas = docs
           that.loading = false // 取消数据遮罩
         })

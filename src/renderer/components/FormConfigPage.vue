@@ -6,10 +6,13 @@
           <span>表单模板
             <i>(Form Template)</i>
           </span>
-          <el-button style="float: right; padding: 2px 0;" type="text">添加</el-button>
+          <el-button style="float: right; padding: 2px 0;" type="text" @click="toTemplate()">添加</el-button>
         </div>
-        <div v-for="o in 2" :key="o" class="text item">
-          {{'列表内容 ' + o }}
+        <div v-for="(temp, index) in templates" :key="index" :id="'template-item' + index" class="text item template-item">
+          <el-button style="float: right; padding: 0;" type="text" @click.prevent="toTemplate(temp, index)">编辑</el-button>
+          <div @click.prevent="selectTemplate(index)">
+            {{ temp.name }}
+          </div>
         </div>
       </el-card>
       <el-card class="box-card">
@@ -18,7 +21,7 @@
             <i>(Element)</i>
           </span>
         </div>
-        <div v-for="ele in elements" :key="ele.name" class="text item">
+        <div v-for="(ele, index) in elements" :key="index" class="text item">
           {{ ele.name }}
           <el-button style="float: right; padding: 0;" type="text" @click="addElement(ele.type)">添加</el-button>
         </div>
@@ -27,7 +30,7 @@
     <el-col :span="12">
       <el-card class="attrs-box-card">
         <el-form :model="elementsForm" label-position="top" ref="elementsForm">
-          <div v-for="(element, index) in elementsForm.attrs" :key="index" :id="'wrap-form-item' + index" class="wrap-form-item" @click="selectFormItem(index)">
+          <div v-for="(element, index) in elementsForm.attrs" :key="index" :id="'wrap-form-item' + index" class="wrap-form-item" @click="selectElementItem(index)">
             <div class="wrap-form-item-close" @click.prevent="removeElement(element)">x</div>
             <el-form-item :label="element.fieldName" :rules="{ required: element.isRequired, message: ' ', trigger: 'blur'}">
               <el-input v-if="element.type == 'input'" v-model="element.value"></el-input>
@@ -46,63 +49,174 @@
         </div>
         <el-form v-if="elementsForm.attrs.length>0" :model="elementsForm" label-position="top" ref="attrsForm">
           <el-form-item v-for="(common, index) in attr.commons" :key="index" :label="common.name">
-            <el-input v-if="common.type == 'input'" v-model="elementsForm.attrs[selectElement][common.key]"></el-input>
-            <el-switch v-else-if="common.type == 'switch'" v-model="elementsForm.attrs[selectElement][common.key]"></el-switch>
+            <el-input v-if="common.type == 'input'" v-model="elementsForm.attrs[selectElementIndex][common.key]"></el-input>
+            <el-switch v-else-if="common.type == 'switch'" v-model="elementsForm.attrs[selectElementIndex][common.key]"></el-switch>
           </el-form-item>
         </el-form>
       </el-card>
     </el-col>
+
+    <el-dialog title="表单模板" :visible.sync="dialogFormVisible">
+      <el-form :model="templateForm" :rules="templateFormRules" ref="templateForm">
+        <el-form-item label="模板唯一标识" prop="key">
+          <el-input v-model="templateForm.key" :disabled="disabledKey"></el-input>
+        </el-form-item>
+        <el-form-item label="模板名称" prop="name">
+          <el-input v-model="templateForm.name"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="cancleTemplate()">取 消</el-button>
+        <el-button type="primary" @click="confirmTemplate()">确 定</el-button>
+      </div>
+    </el-dialog>
   </el-row>
 </template>
 
 <script>
 import formSetting from '../../config/formSetting'
+// import formTemplate from '../../config/formTemplate.json'
+
 export default {
   data () {
     return {
+      templates: [],
       elements: formSetting.elements,
       attr: formSetting.attr,
       elementsForm: {
         attrs: []
       },
-      selectElement: 0, // 所选第几个元素
-      elementAttrs: {} // 页面创建时赋值，给元素装配属性和属性值
+      selectTemplateIndex: 0, // 所选模板索引
+      selectElementIndex: 0, // 所选元素索引
+      elementAttrs: {}, // 页面创建时赋值，给元素装配属性和属性值
+
+      // dialog表单
+      templateForm: { key: '', name: '' },
+      templateFormRules: {
+        key: [{ required: true, message: ' ', trigger: 'blur' }],
+        name: [{ required: true, message: ' ', trigger: 'blur' }]
+      },
+      disabledKey: false,
+      dialogFormVisible: false
     }
   },
   created () {
-    let elementAttrs = {}
-    let attr = this.attr
+    const _this = this
+    // 加载dbFormTemplate数据库
+    this.$dbFormTemplate.loadDatabase()
+
+    // 加载模板数据
+    this.$dbFormTemplate.find({}, {key: 1, name: 1, _id: 0}, (wrong, docs) => {
+      _this.templates = docs
+    })
+
+    const elementAttrs = {}
+    const attr = this.attr
     attr.commons.forEach(obj => {
       elementAttrs[obj.key] = obj.value
     })
     this.elementAttrs = elementAttrs
   },
   methods: {
+    toTemplate (template, index) {
+      this.dialogFormVisible = true
+      if (template) {
+        this.templateForm = JSON.parse(JSON.stringify(template))
+        this.selectTemplateIndex = index
+        this.disabledKey = true
+      } else {
+        this.templateForm = { key: '', name: '' }
+        this.disabledKey = false
+      }
+    },
+    confirmTemplate () {
+      var _this = this
+      this.$refs['templateForm'].validate(valid => {
+        if (valid) {
+          // 复制对象
+          const templateForm = JSON.parse(JSON.stringify(_this.templateForm))
+          // 编辑
+          if (_this.disabledKey) {
+            // 修改模板所改列表中的模板名
+            _this.templates[_this.selectTemplateIndex].name = templateForm.name
+            _this.$dbFormTemplate.update({key: templateForm.key}, {$set: { name: templateForm.name }}, {})
+          } else {
+            _this.templates.push(templateForm)
+            _this.$dbFormTemplate.insert(templateForm)
+          }
+        }
+        _this.cancleTemplate()
+      })
+    },
+    cancleTemplate () {
+      this.dialogFormVisible = false
+      this.$refs['templateForm'].resetFields()
+    },
     addElement (type) {
       const that = this
-      const elementAttrs = JSON.parse(JSON.stringify(that.elementAttrs)) // 复制对象
-      elementAttrs['type'] = type // 元素类型
-      elementAttrs['value'] = '' // 元素默认值
+      // 添加元素必需要选中模板
+      if (this.selectTemplateIndex === 0) {
+        this.$notify({
+          title: '警告',
+          message: '添加元素前，请先选中模板!!!',
+          position: 'bottom-right',
+          type: 'warning'
+        })
+        return
+      }
+      // 复制对象
+      const elementAttrs = JSON.parse(JSON.stringify(that.elementAttrs))
+      // 元素类型
+      elementAttrs['type'] = type
+      // 元素默认值
+      elementAttrs['value'] = ''
       that.elementsForm.attrs.push(elementAttrs)
       const index = that.elementsForm.attrs.length - 1
       setTimeout(function () {
-        that.selectFormItem(index)
+        that.selectElementItem(index)
       }, 50)
     },
     removeElement (element) {
-      var index = this.elementsForm.attrs.indexOf(element)
+      const that = this
+      const attrs = this.elementsForm.attrs
+      const index = attrs.indexOf(element)
       if (index !== -1) {
-        this.elementsForm.attrs.splice(index, 1)
+        // 删除元素后，选中下一个元素，如果删除的是最后一个元素，就选中前一个元素
+        const len = attrs.length - 1
+        var selectIndex = 0
+        if (len > index) {
+          selectIndex = index
+        } else {
+          selectIndex = index - 1
+        }
+        setTimeout(function () {
+          that.elementsForm.attrs.splice(index, 1)
+          that.selectElementItem(selectIndex)
+        }, 50)
       }
     },
-    selectFormItem (index) {
-      var allEle = document.querySelectorAll('.wrap-form-item')
-      allEle.forEach((ele) => {
-        ele.classList.remove('active-form-item')
+    selectTemplate (index) {
+      const _this = this
+      this._selectItem('template-item', 'active-template-item', index, function () {
+        _this.selectTemplateIndex = index
       })
-      var ele = document.querySelector('#wrap-form-item' + index)
-      ele.classList.add('active-form-item')
-      this.selectElement = index
+    },
+    selectElementItem (index) {
+      const _this = this
+      this._selectItem('wrap-form-item', 'active-form-item', index, function () {
+        _this.selectElementIndex = index
+      })
+    },
+    _selectItem (className, activeClassName, index, callback) {
+      var allEle = document.querySelectorAll(`.${className}`)
+      allEle.forEach((ele) => {
+        ele.classList.remove(activeClassName)
+      })
+      var ele = document.querySelector(`#${className}${index}`)
+      if (ele) {
+        ele.classList.add(activeClassName)
+        callback()
+      }
     }
   }
 }
@@ -118,7 +232,11 @@ export default {
 }
 
 .item:hover {
-  background-color: rgb(225, 234, 236);
+  background-color: rgb(195, 232, 240);
+}
+
+.active-template-item {
+  background-color: rgb(227, 237, 240);
 }
 
 .item:last-child {

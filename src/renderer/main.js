@@ -18,6 +18,8 @@ Vue.prototype.$db = new Datastore({
   filename: '.database/filesmanage.db'
 })
 
+Vue.prototype.$dbFormTemplate = new Datastore('.database/formTemplate.db')
+
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = false
 
