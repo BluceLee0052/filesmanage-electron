@@ -28,15 +28,20 @@
       </el-card>
     </el-col>
     <el-col :span="12">
-      <el-card class="attrs-box-card">
+      <el-card class="elements-box-card">
         <el-form :model="elementsForm" label-position="top" ref="elementsForm">
           <div v-for="(element, index) in elementsForm.attrs" :key="index" :id="'wrap-form-item' + index" class="wrap-form-item" @click="selectElementItem(index)">
             <div class="wrap-form-item-close" @click.prevent="removeElement(element)">x</div>
-            <el-form-item :label="element.fieldName" :rules="{ required: element.isRequired, message: ' ', trigger: 'blur'}">
+            <el-form-item :label="element.fieldName" :rules="element.rules">
               <el-input v-if="element.type == 'input'" v-model="element.value"></el-input>
               <el-select v-else-if="element.type == 'select'" v-model="element.value"></el-select>
+              <span v-if="element.remark" class="item_remark">
+                <i class="el-icon-warning"></i> {{element.remark}}</span>
             </el-form-item>
           </div>
+          <el-form-item v-show="elementsForm.attrs.length>0" class="btn-form-item">
+            <el-button type="primary" @click.prevent="saveElements()" :disabled="isSaved">保存</el-button>
+          </el-form-item>
         </el-form>
       </el-card>
     </el-col>
@@ -47,10 +52,23 @@
             <i>(Attribute)</i>
           </span>
         </div>
-        <el-form v-if="elementsForm.attrs.length>0" :model="elementsForm" label-position="top" ref="attrsForm">
-          <el-form-item v-for="(common, index) in attr.commons" :key="index" :label="common.name">
+        <el-form v-if="elementsForm.attrs.length>0" :model="elementsForm" ref="attrsForm">
+          <el-form-item v-for="common in attr.commons" :key="common.key" :label="common.name">
             <el-input v-if="common.type == 'input'" v-model="elementsForm.attrs[selectElementIndex][common.key]"></el-input>
             <el-switch v-else-if="common.type == 'switch'" v-model="elementsForm.attrs[selectElementIndex][common.key]"></el-switch>
+            <!-- 元素子项 -->
+            <template v-if="common.childs">
+              <fieldset v-if="common.childsType == 'fieldset' && elementsForm.attrs[selectElementIndex][common.key] == true" style="width:86%;">
+                <legend>{{common.childsName}}</legend>
+                <el-form-item v-for="child in common.childs" :key="child.key" :label="child.name" v-if="!child.hidden">
+                  <el-input v-if="child.type == 'input'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></el-input>
+                  <el-switch v-else-if="child.type == 'switch'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></el-switch>
+                  <el-select v-else-if="child.type == 'select'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]">
+                    <el-option v-for="param in child.params" :key="param.value" :label="param.text" :value="param.value"></el-option>
+                  </el-select>
+                </el-form-item>
+              </fieldset>
+            </template>
           </el-form-item>
         </el-form>
       </el-card>
@@ -86,7 +104,7 @@ export default {
       elementsForm: {
         attrs: []
       },
-      selectTemplateIndex: 0, // 所选模板索引
+      selectTemplateIndex: -1, // 所选模板索引
       selectElementIndex: 0, // 所选元素索引
       elementAttrs: {}, // 页面创建时赋值，给元素装配属性和属性值
 
@@ -97,7 +115,9 @@ export default {
         name: [{ required: true, message: ' ', trigger: 'blur' }]
       },
       disabledKey: false,
-      dialogFormVisible: false
+      dialogFormVisible: false,
+
+      isSaved: false // 标识是否保存过数据
     }
   },
   created () {
@@ -106,16 +126,67 @@ export default {
     this.$dbFormTemplate.loadDatabase()
 
     // 加载模板数据
-    this.$dbFormTemplate.find({}, {key: 1, name: 1, _id: 0}, (wrong, docs) => {
+    this.$dbFormTemplate.find({}, { key: 1, name: 1, _id: 0 }, (wrong, docs) => {
       _this.templates = docs
     })
 
     const elementAttrs = {}
-    const attr = this.attr
-    attr.commons.forEach(obj => {
+    this.attr.commons.forEach(obj => {
       elementAttrs[obj.key] = obj.value
+      if (obj.bindKey) { // 绑定值，当key值发生改变，binkKey值也改变
+        if (!elementAttrs['bindKeys']) {
+          elementAttrs['bindKeys'] = {}
+        }
+        elementAttrs['bindKeys'][`${obj.bindKey}`] = obj.key
+      }
+      if (obj.childs) { // 存在子项
+        elementAttrs[obj.childsKey] = {}
+        obj.childs.forEach(childObj => {
+          elementAttrs[obj.childsKey][childObj.key] = childObj.value
+        })
+      }
     })
     this.elementAttrs = elementAttrs
+  },
+  watch: {
+    'elementsForm.attrs': { // 监听elementsForm.attrs数据的变化
+      handler (newVal, oldVal) {
+        // 处理保存按钮是否可点
+        if (oldVal.length === 0) { // 点击模板后，按钮不可点
+          this.isSaved = true
+          return
+        } else {
+          this.isSaved = false
+        }
+
+        if (newVal.length !== oldVal.length) { // 不相等，证明是添加元素后触发
+          return
+        }
+
+        // 处理属性绑定
+        // 判断新值，旧值是否相等，防止死循环
+        const _this = this
+        var newObj = newVal[this.selectElementIndex]
+        // var oldObj = oldVal[this.selectElementIndex]
+        if (newObj.bindKeys) {
+          Object.keys(newObj.bindKeys).forEach((key) => {
+            const nVal = _this._parsePath(newObj.bindKeys[key])(newObj)
+            const oVal = _this._parsePath(key)(newObj)
+            if (nVal !== oVal) {
+              const segments = key.split('_')
+              var keyObj = _this.elementsForm.attrs[_this.selectElementIndex]
+              var obj = null // 通过引用，修改值
+              for (let i = 0; i < segments.length - 1; i++) {
+                if (!keyObj) return
+                obj = keyObj[segments[i]]
+              }
+              obj[segments[segments.length - 1]] = nVal
+            }
+          })
+        }
+      },
+      deep: true
+    }
   },
   methods: {
     toTemplate (template, index) {
@@ -135,14 +206,19 @@ export default {
         if (valid) {
           // 复制对象
           const templateForm = JSON.parse(JSON.stringify(_this.templateForm))
+          var templates = _this.templates
           // 编辑
           if (_this.disabledKey) {
             // 修改模板所改列表中的模板名
-            _this.templates[_this.selectTemplateIndex].name = templateForm.name
-            _this.$dbFormTemplate.update({key: templateForm.key}, {$set: { name: templateForm.name }}, {})
+            templates[_this.selectTemplateIndex].name = templateForm.name
+            _this.$dbFormTemplate.update({ key: templateForm.key }, { $set: { name: templateForm.name } }, {})
           } else {
-            _this.templates.push(templateForm)
+            templates.push(templateForm)
             _this.$dbFormTemplate.insert(templateForm)
+            setTimeout(function () {
+              // 选中新添加的模板
+              _this.selectTemplate(templates.length - 1)
+            }, 50)
           }
         }
         _this.cancleTemplate()
@@ -155,11 +231,9 @@ export default {
     addElement (type) {
       const that = this
       // 添加元素必需要选中模板
-      if (this.selectTemplateIndex === 0) {
-        this.$notify({
-          title: '警告',
+      if (this.selectTemplateIndex === -1) {
+        this.$message({
           message: '添加元素前，请先选中模板!!!',
-          position: 'bottom-right',
           type: 'warning'
         })
         return
@@ -195,13 +269,47 @@ export default {
         }, 50)
       }
     },
+    saveElements () {
+      const _this = this
+      this.$dbFormTemplate.update({ key: this.templates[this.selectTemplateIndex].key }, { $set: { elements: this.elementsForm.attrs } }, {}, (wrong, docs) => {
+        if (wrong) {
+          _this.$message({
+            message: '数据保存失败...',
+            type: 'error'
+          })
+        } else {
+          _this.$message({
+            message: '数据保存成功...',
+            type: 'success'
+          })
+        }
+        _this.isSaved = true
+      })
+    },
     selectTemplate (index) {
+      if (this.selectTemplateIndex === index) {
+        return
+      }
       const _this = this
       this._selectItem('template-item', 'active-template-item', index, function () {
         _this.selectTemplateIndex = index
+        // 获取模板的元素集合
+        _this.$dbFormTemplate.find({ key: _this.templates[index].key }, { elements: 1, _id: 0 }, (wrong, docs) => {
+          var elements = docs[0]['elements']
+          if (!elements) {
+            elements = []
+          }
+          _this.elementsForm.attrs = elements
+          setTimeout(function () {
+            _this.selectElementItem(0)
+          }, 50)
+        })
       })
     },
     selectElementItem (index) {
+      // if (this.selectElementIndex === index) {
+      //   return
+      // }
       const _this = this
       this._selectItem('wrap-form-item', 'active-form-item', index, function () {
         _this.selectElementIndex = index
@@ -216,6 +324,20 @@ export default {
       if (ele) {
         ele.classList.add(activeClassName)
         callback()
+      }
+    },
+    _parsePath (path) { // 解析字符串形式对象 如：'a.b.c'  由于数据存在nedb里会有问题，所以改成_
+      const bailRE = /[^\w.$]/
+      if (bailRE.test(path)) {
+        return
+      }
+      const segments = path.split('_')
+      return function (obj) {
+        for (let i = 0; i < segments.length; i++) {
+          if (!obj) return
+          obj = obj[segments[i]]
+        }
+        return obj
       }
     }
   }
@@ -284,6 +406,11 @@ export default {
   display: block;
 }
 
+.item_remark {
+  color: lightblue;
+  font-size: 12px;
+}
+
 /* .active-form-item::after,
 .wrap-form-item:hover::after {
   display: table;
@@ -304,6 +431,30 @@ export default {
   pointer-events: auto;
 } */
 
+.btn-form-item {
+  margin: 10px 10px 0 0;
+  text-align: right;
+}
+
+.elements-box-card .el-card__body {
+  padding: 10px 20px 15px;
+}
+
+.elements-box-card .el-form-item {
+  margin-bottom: 5px;
+}
+
+.elements-box-card .el-form-item__label {
+  line-height: 30px;
+  /* font-size: 12px; */
+  padding: 0;
+}
+
+.elements-box-card .el-form-item__content {
+  line-height: 20px;
+  /* font-size: 12px; */
+}
+
 .attrs-box-card .el-card__body {
   padding: 10px 20px 15px;
 }
@@ -314,12 +465,13 @@ export default {
 
 .attrs-box-card .el-form-item__label {
   line-height: 30px;
-  font-size: 12px;
+  /* font-size: 12px; */
   padding: 0;
 }
 
 .attrs-box-card .el-form-item__content {
-  line-height: 0px;
-  font-size: 12px;
+  line-height: 28px;
+  /* font-size: 12px; */
+  text-align: right;
 }
 </style>

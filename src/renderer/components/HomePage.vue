@@ -6,7 +6,10 @@
           <li title="搜索" @click="addTab('SearchPage')">
             <i class="el-icon-search"></i>
           </li>
-          <li title="导入" @click="addTab('ImportPage')">
+          <li title="导入数据" @click="addTab('ImportPage')">
+            <i class="el-icon-upload"></i>
+          </li>
+          <li title="导入文件路径" @click="addTab('ImportPathsPage')">
             <i class="el-icon-upload"></i>
           </li>
           <li @click="addTab('FormConfigPage')">
@@ -34,11 +37,12 @@
 <script>
 import SearchPage from './SearchPage'
 import ImportPage from './ImportPage'
+import ImportPathsPage from './ImportPathsPage'
 import FormConfigPage from './FormConfigPage'
 
 export default {
   name: 'home-page',
-  components: { SearchPage, ImportPage, FormConfigPage },
+  components: { SearchPage, ImportPage, ImportPathsPage, FormConfigPage },
   data () {
     return {
       activeName: '1',
@@ -63,7 +67,9 @@ export default {
       if (name === 'SearchPage') {
         obj = { title: '搜索', name: 'SearchPage', content: SearchPage }
       } else if (name === 'ImportPage') {
-        obj = { title: '导入', name: 'ImportPage', content: ImportPage }
+        obj = { title: '导入数据', name: 'ImportPage', content: ImportPage }
+      } else if (name === 'ImportPathsPage') {
+        obj = { title: '导入文件路径', name: 'ImportPathsPage', content: ImportPathsPage }
       } else if (name === 'FormConfigPage') {
         obj = { title: '配置表单', name: 'FormConfigPage', content: FormConfigPage }
       } else {
@@ -131,7 +137,7 @@ body {
   padding: 5px;
 }
 
-.el-tabs__item{
+.el-tabs__item {
   height: 30px;
   line-height: 30px;
   font-size: 12px;
