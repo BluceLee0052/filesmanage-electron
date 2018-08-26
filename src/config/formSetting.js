@@ -59,6 +59,23 @@ module.exports = {
         name: '注释',
         value: ''
       }
+    ],
+    select: [
+      // {
+      //   type: 'raido',
+      //   key: 'selectValuesType',
+      //   size: 'mini',
+      //   name: '下拉参数类型',
+      //   params: [{text: '数组', value: 'array'}, {text: '键值对', value: 'key'}],
+      //   value: 'array'
+      // },
+      {
+        type: 'selectCreate',
+        key: 'selectValues',
+        params: [],
+        name: '下拉框值',
+        value: ''
+      }
     ]
   }
 }

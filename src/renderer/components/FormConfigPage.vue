@@ -32,12 +32,16 @@
         <el-form :model="elementsForm" label-position="top" ref="elementsForm">
           <div v-for="(element, index) in elementsForm.attrs" :key="index" :id="'wrap-form-item' + index" class="wrap-form-item" @click="selectElementItem(index)">
             <div class="wrap-form-item-close" @click.prevent="removeElement(element)">x</div>
-            <el-form-item :label="element.fieldName" :rules="element.rules">
+            <!-- <el-form-item :label="element.fieldName" :rules="element.rules">
               <el-input v-if="element.type == 'input'" v-model="element.value"></el-input>
               <el-select v-else-if="element.type == 'select'" v-model="element.value"></el-select>
               <span v-if="element.remark" class="item_remark">
                 <i class="el-icon-warning"></i> {{element.remark}}</span>
-            </el-form-item>
+            </el-form-item> -->
+            <element-judge :data="element" v-model="element.value">
+              <span v-if="element.remark" class="item_remark">
+                <i class="el-icon-warning"></i> {{element.remark}}</span>
+            </element-judge>
           </div>
           <el-form-item v-show="elementsForm.attrs.length>0" class="btn-form-item">
             <el-button type="primary" @click.prevent="saveElements()" :disabled="isSaved">保存</el-button>
@@ -53,23 +57,34 @@
           </span>
         </div>
         <el-form v-if="elementsForm.attrs.length>0" :model="elementsForm" ref="attrsForm">
-          <el-form-item v-for="common in attr.commons" :key="common.key" :label="common.name">
+          <!-- <el-form-item v-for="common in attr.commons" :key="common.key" :label="common.name">
             <el-input v-if="common.type == 'input'" v-model="elementsForm.attrs[selectElementIndex][common.key]"></el-input>
             <el-switch v-else-if="common.type == 'switch'" v-model="elementsForm.attrs[selectElementIndex][common.key]"></el-switch>
-            <!-- 元素子项 -->
-            <template v-if="common.childs">
-              <fieldset v-if="common.childsType == 'fieldset' && elementsForm.attrs[selectElementIndex][common.key] == true" style="width:86%;">
-                <legend>{{common.childsName}}</legend>
-                <el-form-item v-for="child in common.childs" :key="child.key" :label="child.name" v-if="!child.hidden">
-                  <el-input v-if="child.type == 'input'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></el-input>
-                  <el-switch v-else-if="child.type == 'switch'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></el-switch>
-                  <el-select v-else-if="child.type == 'select'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]">
-                    <el-option v-for="param in child.params" :key="param.value" :label="param.text" :value="param.value"></el-option>
-                  </el-select>
-                </el-form-item>
-              </fieldset>
-            </template>
-          </el-form-item>
+            
+            <fieldset v-if="common.childs && common.childsType == 'fieldset' && elementsForm.attrs[selectElementIndex][common.key] == true" style="width:86%;">
+              <legend>{{common.childsName}}</legend>
+              <el-form-item v-for="child in common.childs" :key="child.key" :label="child.name" v-if="!child.hidden">
+                <el-input v-if="child.type == 'input'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></el-input>
+                <el-switch v-else-if="child.type == 'switch'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></el-switch>
+                <el-select v-else-if="child.type == 'select'" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]">
+                  <el-option v-for="param in child.params" :key="param.value" :label="param.text" :value="param.value"></el-option>
+                </el-select>
+              </el-form-item>
+            </fieldset>
+          </el-form-item> -->
+          <element-judge v-for="common in attr.commons" :key="common.key" :data="common" v-model="elementsForm.attrs[selectElementIndex][common.key]">
+            <fieldset v-if="common.childs && common.childsType == 'fieldset' && elementsForm.attrs[selectElementIndex][common.key] == true" style="width:86%;">
+              <legend>{{common.childsName}}</legend>
+              <element-judge v-for="child in common.childs" :key="child.key" :data="child" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></element-judge>
+            </fieldset>
+          </element-judge>
+          <!-- 特定元素属性 -->
+          <element-judge v-for="common in attr[elementsForm.attrs[selectElementIndex].type]" :key="common.key" :data="common" v-model="elementsForm.attrs[selectElementIndex][common.key]">
+            <fieldset v-if="common.childs && common.childsType == 'fieldset' && elementsForm.attrs[selectElementIndex][common.key] == true" style="width:86%;">
+              <legend>{{common.childsName}}</legend>
+              <element-judge v-for="child in common.childs" :key="child.key" :data="child" v-model="elementsForm.attrs[selectElementIndex][common.childsKey][child.key]"></element-judge>
+            </fieldset>
+          </element-judge>
         </el-form>
       </el-card>
     </el-col>
@@ -93,9 +108,11 @@
 
 <script>
 import formSetting from '../../config/formSetting'
+import ElementJudge from './CommonPage/ElementJudge'
 // import formTemplate from '../../config/formTemplate.json'
 
 export default {
+  components: { ElementJudge },
   data () {
     return {
       templates: [],
@@ -107,6 +124,7 @@ export default {
       selectTemplateIndex: -1, // 所选模板索引
       selectElementIndex: 0, // 所选元素索引
       elementAttrs: {}, // 页面创建时赋值，给元素装配属性和属性值
+      elementTypeAttrs: {}, // 给特定元素装配属性和属性值
 
       // dialog表单
       templateForm: { key: '', name: '' },
@@ -130,23 +148,20 @@ export default {
       _this.templates = docs
     })
 
-    const elementAttrs = {}
-    this.attr.commons.forEach(obj => {
-      elementAttrs[obj.key] = obj.value
-      if (obj.bindKey) { // 绑定值，当key值发生改变，binkKey值也改变
-        if (!elementAttrs['bindKeys']) {
-          elementAttrs['bindKeys'] = {}
-        }
-        elementAttrs['bindKeys'][`${obj.bindKey}`] = obj.key
+    var elementAttrs = {}
+    var elementTypeAttrs = {}
+    const attr = this.attr
+    _this._bufferElementAttrs(attr.commons, elementAttrs)
+    var i = 0
+    // 特定元素需要的属性
+    for (let key in attr) {
+      if (i++ >= 1) {
+        _this._bufferElementAttrs(attr[key], elementTypeAttrs[key] = {})
       }
-      if (obj.childs) { // 存在子项
-        elementAttrs[obj.childsKey] = {}
-        obj.childs.forEach(childObj => {
-          elementAttrs[obj.childsKey][childObj.key] = childObj.value
-        })
-      }
-    })
+    }
+
     this.elementAttrs = elementAttrs
+    this.elementTypeAttrs = elementTypeAttrs
   },
   watch: {
     'elementsForm.attrs': { // 监听elementsForm.attrs数据的变化
@@ -175,7 +190,8 @@ export default {
             if (nVal !== oVal) {
               const segments = key.split('_')
               var keyObj = _this.elementsForm.attrs[_this.selectElementIndex]
-              var obj = null // 通过引用，修改值
+              // 通过引用，修改值
+              var obj = null
               for (let i = 0; i < segments.length - 1; i++) {
                 if (!keyObj) return
                 obj = keyObj[segments[i]]
@@ -244,6 +260,10 @@ export default {
       elementAttrs['type'] = type
       // 元素默认值
       elementAttrs['value'] = ''
+      // 特定元素属性
+      const elementTypeAttrs = that.elementTypeAttrs[type]
+      Object.assign(elementAttrs, !elementTypeAttrs ? {} : JSON.parse(JSON.stringify(elementTypeAttrs)))
+      console.dir(elementAttrs)
       that.elementsForm.attrs.push(elementAttrs)
       const index = that.elementsForm.attrs.length - 1
       setTimeout(function () {
@@ -339,6 +359,23 @@ export default {
         }
         return obj
       }
+    },
+    _bufferElementAttrs (attrs, elementAttrs) {
+      attrs.forEach(obj => {
+        elementAttrs[obj.key] = obj.value
+        if (obj.bindKey) { // 绑定值，当key值发生改变，binkKey值也改变
+          if (!elementAttrs['bindKeys']) {
+            elementAttrs['bindKeys'] = {}
+          }
+          elementAttrs['bindKeys'][`${obj.bindKey}`] = obj.key
+        }
+        if (obj.childs) { // 存在子项
+          elementAttrs[obj.childsKey] = {}
+          obj.childs.forEach(childObj => {
+            elementAttrs[obj.childsKey][childObj.key] = childObj.value
+          })
+        }
+      })
     }
   }
 }
