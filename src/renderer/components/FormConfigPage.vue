@@ -263,7 +263,6 @@ export default {
       // 特定元素属性
       const elementTypeAttrs = that.elementTypeAttrs[type]
       Object.assign(elementAttrs, !elementTypeAttrs ? {} : JSON.parse(JSON.stringify(elementTypeAttrs)))
-      console.dir(elementAttrs)
       that.elementsForm.attrs.push(elementAttrs)
       const index = that.elementsForm.attrs.length - 1
       setTimeout(function () {

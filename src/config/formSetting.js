@@ -74,7 +74,7 @@ module.exports = {
         key: 'selectValues',
         params: [],
         name: '下拉框值',
-        value: ''
+        value: []
       }
     ]
   }
