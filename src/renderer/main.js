@@ -18,7 +18,13 @@ Vue.prototype.$db = new Datastore({
   filename: '.database/filesmanage.db'
 })
 
-Vue.prototype.$dbFormTemplate = new Datastore('.database/formTemplate.db')
+Vue.prototype.$dbFormTemplate = new Datastore({
+  autoload: true,
+  filename: '.database/formTemplate.db'
+})
+// Vue.prototype.$dbFormTemplate = new Datastore('.database/formTemplate.db')
+// // 加载dbFormTemplate数据库
+// this.$dbFormTemplate.loadDatabase()
 
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = false

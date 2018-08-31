@@ -140,8 +140,6 @@ export default {
   },
   created () {
     const _this = this
-    // 加载dbFormTemplate数据库
-    this.$dbFormTemplate.loadDatabase()
 
     // 加载模板数据
     this.$dbFormTemplate.find({}, { key: 1, name: 1, _id: 0 }, (wrong, docs) => {

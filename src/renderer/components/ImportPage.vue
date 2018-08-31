@@ -1,16 +1,16 @@
 <template>
   <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
-    <el-form-item label="盘符" prop="drive">
-      <el-select v-model="ruleForm.drive" placeholder="请选择盘符">
+    <el-form-item label="模板" prop="template">
+      <el-select v-model="ruleForm.template" placeholder="请选择模板">
         <el-option v-for="drive in drives" :key="drive" :label="drive+':\\'" :value="drive"></el-option>
       </el-select>
     </el-form-item>
-    <el-form-item label="层次" prop="level">
-      <el-input-number v-model="ruleForm.level" :min="1" :max="10"></el-input-number>
-      <span class="item_flag">
-        <i class="el-icon-warning"></i> 代表以第几层的文件夹名称，作为名称</span>
+    <el-form-item label="操作方式">
+      <el-select v-model="ruleForm.operatMode" placeholder="请选择操作方式">
+        <el-option label="导入" value="import"></el-option>
+        <el-option label="录入" value="entry"></el-option>
+      </el-select>
     </el-form-item>
-    <el-form-item></el-form-item>
     <el-form-item label="导入文件" prop="files">
       <import-file v-model="ruleForm.files"></import-file>
     </el-form-item>
@@ -33,16 +33,18 @@ export default {
       loading: null, // $loading对象
       drives: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
       ruleForm: {
-        drive: 'A',
-        level: 1,
+        template: '',
+        operatMode: 'import',
         files: []
       },
       rules: {
-        drive: [{ required: true, message: '请选择盘符', trigger: 'change' }],
-        level: [{ required: true, message: '请选择层次', trigger: 'change' }],
+        template: [{ required: true, message: '请选择模板', trigger: 'change' }],
         files: [{ type: 'array', required: true, message: ' ', trigger: 'change' }]
       }
     }
+  },
+  created () {
+    
   },
   methods: {
     _openFullScreen (isOpen) { // 打开全屏遮罩
