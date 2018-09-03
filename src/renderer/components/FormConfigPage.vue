@@ -138,23 +138,18 @@ export default {
       isSaved: false // 标识是否保存过数据
     }
   },
-  created () {
-    const _this = this
-
-    // 加载模板数据
-    this.$dbFormTemplate.find({}, { key: 1, name: 1, _id: 0 }, (wrong, docs) => {
-      _this.templates = docs
-    })
+  mounted () {
+    this.templates = this.$store.state.FormTemplate.templates
 
     var elementAttrs = {}
     var elementTypeAttrs = {}
     const attr = this.attr
-    _this._bufferElementAttrs(attr.commons, elementAttrs)
+    this._bufferElementAttrs(attr.commons, elementAttrs)
     var i = 0
     // 特定元素需要的属性
     for (let key in attr) {
       if (i++ >= 1) {
-        _this._bufferElementAttrs(attr[key], elementTypeAttrs[key] = {})
+        this._bufferElementAttrs(attr[key], elementTypeAttrs[key] = {})
       }
     }
 
@@ -295,6 +290,9 @@ export default {
             type: 'error'
           })
         } else {
+          // 更新store里的state.templates
+          _this.$store.dispatch('setTemplates', _this.templates)
+
           _this.$message({
             message: '数据保存成功...',
             type: 'success'

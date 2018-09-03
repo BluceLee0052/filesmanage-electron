@@ -1,24 +1,32 @@
 <template>
-  <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
-    <el-form-item label="模板" prop="template">
-      <el-select v-model="ruleForm.template" placeholder="请选择模板">
-        <el-option v-for="drive in drives" :key="drive" :label="drive+':\\'" :value="drive"></el-option>
-      </el-select>
-    </el-form-item>
-    <el-form-item label="操作方式">
-      <el-select v-model="ruleForm.operatMode" placeholder="请选择操作方式">
-        <el-option label="导入" value="import"></el-option>
-        <el-option label="录入" value="entry"></el-option>
-      </el-select>
-    </el-form-item>
-    <el-form-item label="导入文件" prop="files">
-      <import-file v-model="ruleForm.files"></import-file>
-    </el-form-item>
-    <el-form-item>
-      <el-button type="primary" @click="submitForm('ruleForm')">导入</el-button>
-      <el-button @click="resetForm('ruleForm')">重置</el-button>
-    </el-form-item>
-  </el-form>
+  <div>
+    <el-form :inline="true" :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
+      <el-form-item label="模板" prop="template">
+        <el-select v-model="ruleForm.template" placeholder="请选择模板">
+          <el-option v-for="temp in templates" :key="temp.key" :label="temp.name" :value="temp.key"></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="操作方式" prop="operatMode">
+        <el-select v-model="ruleForm.operatMode">
+          <el-option label="导入" value="import"></el-option>
+          <el-option label="录入" value="entry"></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="submitForm('ruleForm')">确定</el-button>
+      </el-form-item>
+    </el-form>
+
+    <el-form :model="dataForm" ref="dataForm" label-width="100px">
+      <el-form-item label="导入文件" prop="files" :rules="{ type: 'array', required: true, message: ' ', trigger: 'change' }">
+        <import-file v-model="dataForm.files"></import-file>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="submitForm('dataForm')">导入</el-button>
+        <el-button @click="resetForm('dataForm')">重置</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
 </template>
 
 <script>
@@ -31,20 +39,22 @@ export default {
   data () {
     return {
       loading: null, // $loading对象
-      drives: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+      templates: [],
       ruleForm: {
         template: '',
-        operatMode: 'import',
-        files: []
+        operatMode: 'import'
       },
       rules: {
         template: [{ required: true, message: '请选择模板', trigger: 'change' }],
-        files: [{ type: 'array', required: true, message: ' ', trigger: 'change' }]
+        operatMode: [{ required: true, message: '请选择操作方式', trigger: 'change' }]
+      },
+      dataForm: {
+        files: []
       }
     }
   },
   created () {
-    
+    this.templates = this.$store.state.FormTemplate.templates
   },
   methods: {
     _openFullScreen (isOpen) { // 打开全屏遮罩

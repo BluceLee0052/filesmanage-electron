@@ -3,16 +3,23 @@ const state = {
 }
 
 const mutations = {
-  setTemplates (state, templates) {
+  SET_TEMPLATES (state, templates) {
     state.templates = templates
   }
 }
 
 const actions = {
-  // someAsyncTask ({ commit }) {
-  //   // do something async
-  //   commit('INCREMENT_MAIN_COUNTER')
-  // }
+  setTemplates ({ commit }, templates) {
+    commit('SET_TEMPLATES', templates)
+  },
+  loadTemplates ({ commit }) {
+    setTimeout(function () {
+      // 加载模板数据
+      window.vue.$dbFormTemplate.find({}, { key: 1, name: 1, _id: 0 }, (wrong, docs) => {
+        commit('SET_TEMPLATES', docs)
+      })
+    }, 200)
+  }
 }
 
 export default {

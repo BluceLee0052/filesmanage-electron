@@ -56,6 +56,10 @@ export default {
       tabs: []
     }
   },
+  mounted () {
+    // 加载模板数据
+    this.$store.dispatch('loadTemplates')
+  },
   methods: {
     handleClick (key, keyPath) {
       // console.log(key, keyPath)
