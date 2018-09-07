@@ -146,7 +146,7 @@ export default {
     const attr = this.attr
     this._bufferElementAttrs(attr.commons, elementAttrs)
     var i = 0
-    // 特定元素需要的属性
+    // 排除commons项 特定元素需要的属性
     for (let key in attr) {
       if (i++ >= 1) {
         this._bufferElementAttrs(attr[key], elementTypeAttrs[key] = {})
@@ -181,15 +181,19 @@ export default {
             const nVal = _this._parsePath(newObj.bindKeys[key])(newObj)
             const oVal = _this._parsePath(key)(newObj)
             if (nVal !== oVal) {
-              const segments = key.split('_')
               var keyObj = _this.elementsForm.attrs[_this.selectElementIndex]
-              // 通过引用，修改值
-              var obj = null
-              for (let i = 0; i < segments.length - 1; i++) {
-                if (!keyObj) return
-                obj = keyObj[segments[i]]
+              const segments = key.split('_')
+              if (segments.length > 1) { // 如：'a.b.c'
+                // 通过引用，修改值
+                var obj = null
+                for (let i = 0; i < segments.length - 1; i++) {
+                  if (!keyObj) return
+                  obj = keyObj[segments[i]]
+                }
+                obj[segments[segments.length - 1]] = nVal
+              } else {
+                keyObj[segments[0]] = nVal
               }
-              obj[segments[segments.length - 1]] = nVal
             }
           })
         }
@@ -368,6 +372,13 @@ export default {
           elementAttrs[obj.childsKey] = {}
           obj.childs.forEach(childObj => {
             elementAttrs[obj.childsKey][childObj.key] = childObj.value
+
+            if (obj.bindKey) { // 子项绑定值，当key值发生改变，binkKey值也改变
+              if (!elementAttrs['bindKeys']) {
+                elementAttrs['bindKeys'] = {}
+              }
+              elementAttrs['bindKeys'][`${obj.bindKey}`] = obj.key
+            }
           })
         }
       })

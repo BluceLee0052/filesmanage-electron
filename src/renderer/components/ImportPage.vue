@@ -1,8 +1,8 @@
 <template>
   <div>
     <el-form :inline="true" :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px">
-      <el-form-item label="模板" prop="template">
-        <el-select v-model="ruleForm.template" placeholder="请选择模板">
+      <el-form-item label="模板" prop="templateKey">
+        <el-select v-model="ruleForm.templateKey" placeholder="请选择模板">
           <el-option v-for="temp in templates" :key="temp.key" :label="temp.name" :value="temp.key"></el-option>
         </el-select>
       </el-form-item>
@@ -16,10 +16,15 @@
         <el-button type="primary" @click="submitForm('ruleForm')">确定</el-button>
       </el-form-item>
     </el-form>
-
     <el-form :model="dataForm" ref="dataForm" label-width="100px">
-      <el-form-item label="导入文件" prop="files" :rules="{ type: 'array', required: true, message: ' ', trigger: 'change' }">
-        <import-file v-model="dataForm.files"></import-file>
+      <template v-if="dataForm.operatMode == 'entry'">
+        <element-judge v-for="(element, index) in dataForm.elements" :key="index" :data="element" v-model="element.value">
+          <span v-if="element.remark" class="item_flag">
+            <i class="el-icon-warning"></i> {{element.remark}}</span>
+        </element-judge>
+      </template>
+      <el-form-item v-else-if="dataForm.operatMode == 'import'" label="导入文件" prop="files" :rules="{ type: 'array', required: true, message: ' ', trigger: 'change' }">
+        <import-file v-model="dataForm._files"></import-file>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="submitForm('dataForm')">导入</el-button>
@@ -31,24 +36,28 @@
 
 <script>
 import ImportFile from './ImportPage/ImportFile'
+import ElementJudge from './CommonPage/ElementJudge'
 
 export default {
   components: {
-    ImportFile
+    ImportFile,
+    ElementJudge
   },
   data () {
     return {
       loading: null, // $loading对象
       templates: [],
       ruleForm: {
-        template: '',
+        templateKey: '',
         operatMode: 'import'
       },
       rules: {
-        template: [{ required: true, message: '请选择模板', trigger: 'change' }],
+        templateKey: [{ required: true, message: '请选择模板', trigger: 'change' }],
         operatMode: [{ required: true, message: '请选择操作方式', trigger: 'change' }]
       },
       dataForm: {
+        operatMode: 'import',
+        elements: [],
         files: []
       }
     }
@@ -73,26 +82,38 @@ export default {
       var that = this
       that.$refs[formName].validate(valid => {
         if (valid) {
-          that._openFullScreen(true)
-          setTimeout(() => {
-            that.$db.insert(this.ruleForm.files, (wrong) => {
-              that._openFullScreen(false)
-              if (!wrong) {
-                that.resetForm('ruleForm')
-                that.$message({
-                  message: '数据构建成功...',
-                  type: 'success',
-                  center: true
-                })
-              } else {
-                that.$message({
-                  message: '数据构建失败...',
-                  type: 'error',
-                  center: true
-                })
+          if (formName === 'ruleForm') {
+            that.dataForm.operatMode = that.ruleForm.operatMode
+            that.$dbFormTemplate.find({ key: that.ruleForm.templateKey }, { elements: 1, _id: 0 }, (wrong, docs) => {
+              var elements = docs[0]['elements']
+
+              if (!elements) {
+                elements = []
               }
+              that.dataForm.elements = elements
             })
-          }, 200)
+          } else if (formName === 'dataForm') {
+            that._openFullScreen(true)
+            setTimeout(() => {
+              that.$db.insert(this.dataForm.files, (wrong) => {
+                that._openFullScreen(false)
+                if (!wrong) {
+                  that.resetForm(formName)
+                  that.$message({
+                    message: '数据处理成功...',
+                    type: 'success',
+                    center: true
+                  })
+                } else {
+                  that.$message({
+                    message: '数据处理失败...',
+                    type: 'error',
+                    center: true
+                  })
+                }
+              })
+            }, 200)
+          }
         } else {
           that.$message({
             message: '表单验证失败...',
@@ -103,7 +124,7 @@ export default {
       })
     },
     resetForm (formName) {
-      this.ruleForm.files = []
+      this.dataForm.files = []
       this.$refs[formName].resetFields()
     }
   }

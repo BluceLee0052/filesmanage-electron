@@ -19,9 +19,17 @@ module.exports = {
       },
       {
         type: 'input',
-        key: 'field',
+        key: 'field', // filed的值改变，prop的值也改变
+        bindKey: 'prop',
         name: '字段名',
         value: ''
+      },
+      {
+        type: 'input',
+        key: 'prop',
+        name: '属性名', // 如果是必填项，需要此属性
+        value: '',
+        hidden: true
       },
       {
         type: 'switch',
@@ -43,7 +51,8 @@ module.exports = {
           type: 'input',
           key: 'message',
           name: '必填提示',
-          value: ''
+          value: ' ',
+          hidden: true // 不需要，有注释就可以了
         },
         {
           type: 'select',

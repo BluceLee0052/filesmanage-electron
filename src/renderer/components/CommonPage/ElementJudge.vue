@@ -1,5 +1,5 @@
 <template>
-  <el-form-item v-if="!data.hidden" :label="data.name || data.fieldName" :rules="data.rules">
+  <el-form-item v-if="!data.hidden" :label="data.name || data.fieldName" :prop="data.prop" :rules="data.rules">
     <el-input v-if="data.type == 'input'" v-model="currentValue"></el-input>
     <el-switch v-else-if="data.type == 'switch'" v-model="currentValue"></el-switch>
     <el-select v-else-if="data.type == 'select'" v-model="currentValue">
