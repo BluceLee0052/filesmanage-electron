@@ -35,6 +35,7 @@ export default {
     return {
       loading: null, // $loading对象
       focusFilesDiv: false,
+      picTypes: ['jpg', 'jpeg', 'png'], // 图片格式
       pathTxtRadio: '1',
       drives: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
       files: [],
@@ -123,13 +124,19 @@ export default {
       const files = fs.readdirSync(path)
       files.forEach(function (fileName, index) {
         const realPath = pathUtil.join(path, fileName)
-        const stat = fs.statSync(realPath)
-        if (stat.isFile()) {
-          returnFilesList.push(that._wrapFileObj({ size: stat.size, fileName: fileName, path: realPath }))
-        } else {
-          that._readDirFileList(realPath, returnFilesList)
-        }
+        that._setReturnFilesList(realPath, fileName, returnFilesList)
       })
+    },
+    _setReturnFilesList (realPath, fileName, returnFilesList) {
+      const stat = fs.statSync(realPath)
+      if (stat.isFile()) {
+        const ext = pathUtil.extname(realPath)
+        if (this.picTypes.indexOf(ext) === -1) { // 排除图片文件
+          returnFilesList.push(this._wrapFileObj({ size: stat.size, fileName: fileName, path: realPath }))
+        }
+      } else {
+        this._readDirFileList(realPath, returnFilesList)
+      }
     },
     _wrapFileObj ({ size = 0, path = '', fileName = '' }) { // 封装文件对象
       const dir = path.split(pathUtil.sep)
@@ -207,12 +214,7 @@ export default {
           setTimeout(() => {
             var returnFilesList = []
             for (var file of that.files) {
-              const stat = fs.statSync(file.path)
-              if (stat.isFile()) {
-                returnFilesList.push(that._wrapFileObj({ size: file.size, fileName: file.name, path: file.path }))
-              } else {
-                that._readDirFileList(file.path, returnFilesList)
-              }
+              that._setReturnFilesList(file.path, file.name, returnFilesList)
             }
             that.$db.insert(returnFilesList, (wrong) => {
               that._openFullScreen(false)
