@@ -2,8 +2,8 @@
   <div>
     <el-input placeholder="请输入内容" v-model="search.content" @focus="listenerEnter(true)" @blur="listenerEnter(false)" class="input-with-select">
       <el-select v-model="search.type" slot="prepend" placeholder="请选择">
+        <el-option label="编号" value="code"></el-option>
         <el-option label="名称" value="name"></el-option>
-        <el-option label="文件名" value="fileName"></el-option>
       </el-select>
       <el-button slot="append" icon="el-icon-search" @click="searchBtn()"></el-button>
     </el-input>
@@ -12,9 +12,12 @@
       <el-table v-loading="loading" :data="page.datas" :border="true" style="width: 100%">
         <el-table-column type="expand">
           <template slot-scope="props">
-            <el-form label-position="left" inline class="demo-table-expand">
+            <el-form label-position="left" label-width="40" inline class="demo-table-expand">
               <el-form-item label="盘符">
                 <span>{{ props.row.drive }}:\</span>
+              </el-form-item>
+              <el-form-item label="编号">
+                <span>{{ props.row.code }}</span>
               </el-form-item>
               <el-form-item label="名称">
                 <span>{{ props.row.name }}</span>
@@ -30,6 +33,8 @@
               </el-form-item>
             </el-form>
           </template>
+        </el-table-column>
+        <el-table-column label="编号" prop="code">
         </el-table-column>
         <el-table-column label="名称" prop="name">
         </el-table-column>
@@ -51,7 +56,7 @@ export default {
     return {
       loading: false,
       search: {
-        type: 'name',
+        type: 'code',
         content: ''
       },
       pageSizes: [5, 10],

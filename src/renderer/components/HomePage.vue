@@ -10,7 +10,7 @@
             <i class="el-icon-upload"></i>
           </li>
           <li title="导入文件路径" @click="addTab('ImportPathsPage')">
-            <i class="el-icon-upload"></i>
+            <i class="el-icon-tickets"></i>
           </li>
           <li @click="addTab('FormConfigPage')">
             <i class="el-icon-setting"></i>

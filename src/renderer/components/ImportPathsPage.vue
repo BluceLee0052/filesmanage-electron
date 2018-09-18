@@ -5,12 +5,6 @@
         <el-option v-for="drive in drives" :key="drive" :label="drive+':\\'" :value="drive"></el-option>
       </el-select>
     </el-form-item>
-    <el-form-item label="层次" prop="level">
-      <el-input-number v-model="ruleForm.level" :min="1" :max="10"></el-input-number>
-      <span class="item_flag">
-        <i class="el-icon-warning"></i> 代表以第几层的文件夹名称，作为名称</span>
-    </el-form-item>
-    <el-form-item></el-form-item>
     <el-form-item label="导入文件" prop="selectFilePaths">
       <div id="filesDiv">
         <div id="dropbox" @mouseout="focusFilesDiv=false" @mouseover="focusFilesDiv=true" @click.prevent="selectFiles($event)">将文件或文件夹拖到此处（或点击选择）</div>
@@ -46,12 +40,10 @@ export default {
       files: [],
       ruleForm: {
         drive: 'A',
-        level: 1,
         selectFilePaths: ''
       },
       rules: {
         drive: [{ required: true, message: '请选择盘符', trigger: 'change' }],
-        level: [{ required: true, message: '请选择层次', trigger: 'change' }],
         selectFilePaths: [{ required: true, message: ' ', trigger: 'change' }]
       }
     }
@@ -141,14 +133,31 @@ export default {
     },
     _wrapFileObj ({ size = 0, path = '', fileName = '' }) { // 封装文件对象
       const dir = path.split(pathUtil.sep)
-      const name = dir[this.ruleForm.level]
+      const regCode = /\w{2,}-\d{3,}/i
+      const regName = /^[\u4e00-\u9fa5]+$/
+      var dirLevel = dir.length - 2 // 文件夹的层级，里面包含文件名，需要去掉
+      // 编号
+      var code = fileName.match(regCode)
+      if (code == null) { // 通过文件名，没有找到编号，就通过父文件夹找
+        code = dir[dirLevel].match(regCode)
+        dirLevel -= 1
+      }
+      var name = dir[dirLevel].match(regName) // 作者
+      if (name == null) {
+        for (let i = 1; i < dirLevel; i++) {
+          dirLevel -= 1
+          name = dir[dirLevel].match(regName)
+          if (name != null) return
+        }
+      }
+
       return {
         drive: this.ruleForm.drive,
+        name: name != null ? name[0] : '',
+        code: code != null ? code[0] : '',
         size: size,
-        // name: fileName.substring(0, fileName.lastIndexOf('.')),
-        name: name,
         fileName: fileName,
-        path: pathUtil.dirname(this.ruleForm.drive + path.substring(1)), // 去掉盘符 如 D:\\桌面\\text.txt => \\桌面
+        path: pathUtil.dirname(path.substring(2)), // 去掉盘符 如 D:\\桌面\\text.txt => \\桌面
         ext: pathUtil.extname(path)
       }
     },

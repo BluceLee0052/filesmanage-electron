@@ -16,7 +16,7 @@
         <el-button type="primary" @click="submitForm('ruleForm')">确定</el-button>
       </el-form-item>
     </el-form>
-    <el-form :model="dataForm" ref="dataForm" label-width="100px">
+    <el-form id="dataForm" :model="dataForm" ref="dataForm" label-width="100px">
       <template v-if="dataForm.operatMode == 'entry'">
         <element-judge v-for="(element, index) in dataForm.elements" :key="index" :data="element" v-model="element.value">
           <span v-if="element.remark" class="item_flag">
@@ -27,7 +27,7 @@
         <import-file v-model="dataForm._files"></import-file>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitForm('dataForm')">导入</el-button>
+        <el-button type="primary" @click="submitForm('dataForm')">{{btnName}}</el-button>
         <el-button @click="resetForm('dataForm')">重置</el-button>
       </el-form-item>
     </el-form>
@@ -46,6 +46,7 @@ export default {
   data () {
     return {
       loading: null, // $loading对象
+      btnName: '导入',
       templates: [],
       ruleForm: {
         templateKey: '',
@@ -84,6 +85,12 @@ export default {
         if (valid) {
           if (formName === 'ruleForm') {
             that.dataForm.operatMode = that.ruleForm.operatMode
+            // 按钮显示名称
+            if (that.dataForm.operatMode === 'import') {
+              that.btnName = '导入'
+            } else {
+              that.btnName = '保存'
+            }
             that.$dbFormTemplate.find({ key: that.ruleForm.templateKey }, { elements: 1, _id: 0 }, (wrong, docs) => {
               var elements = docs[0]['elements']
 
@@ -141,5 +148,9 @@ export default {
   top: 100%;
   left: 0;
   margin-top: 3px;
+}
+
+#dataForm .el-form-item:last-child {
+  padding-top: 5px;
 }
 </style>
