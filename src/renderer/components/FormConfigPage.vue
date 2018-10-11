@@ -313,16 +313,11 @@ export default {
       this._selectItem('template-item', 'active-template-item', index, function () {
         _this.selectTemplateIndex = index
         // 获取模板的元素集合
-        _this.$dbFormTemplate.find({ key: _this.templates[index].key }, { elements: 1, _id: 0 }, (wrong, docs) => {
-          var elements = docs[0]['elements']
-          if (!elements) {
-            elements = []
-          }
-          _this.elementsForm.attrs = elements
-          setTimeout(function () {
-            _this.selectElementItem(0)
-          }, 50)
-        })
+        _this.$store.dispatch('loadElementsByKey', _this.templates[index].key)
+        _this.elementsForm.attrs = _this.$store.state.FormTemplate.elements
+        setTimeout(function () {
+          _this.selectElementItem(0)
+        }, 50)
       })
     },
     selectElementItem (index) {

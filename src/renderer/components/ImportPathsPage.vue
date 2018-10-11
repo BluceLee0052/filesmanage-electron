@@ -35,7 +35,8 @@ export default {
     return {
       loading: null, // $loading对象
       focusFilesDiv: false,
-      picTypes: ['jpg', 'jpeg', 'png'], // 图片格式
+      picExts: ['jpg', 'jpeg', 'png'], // 图片格式
+      videoExts: ['mp4', 'mkv', 'rmvb', 'avi', 'wmv'], // 电影格式
       pathTxtRadio: '1',
       drives: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
       files: [],
@@ -130,8 +131,8 @@ export default {
     _setReturnFilesList (realPath, fileName, returnFilesList) {
       const stat = fs.statSync(realPath)
       if (stat.isFile()) {
-        const ext = pathUtil.extname(realPath)
-        if (this.picTypes.indexOf(ext) === -1) { // 排除图片文件
+        const ext = pathUtil.extname(realPath).toLowerCase()
+        if (this.videoExts.indexOf(ext) !== -1) { // 视频文件
           returnFilesList.push(this._wrapFileObj({ size: stat.size, fileName: fileName, path: realPath }))
         }
       } else {
@@ -143,13 +144,12 @@ export default {
       const regCode = /\w{2,}-\d{3,}/i
       const regName = /^[\u4e00-\u9fa5]+$/
       var dirLevel = dir.length - 2 // 文件夹的层级，里面包含文件名，需要去掉
-      // 编号
       var code = fileName.match(regCode)
       if (code == null) { // 通过文件名，没有找到编号，就通过父文件夹找
         code = dir[dirLevel].match(regCode)
         dirLevel -= 1
       }
-      var name = dir[dirLevel].match(regName) // 作者
+      var name = dir[dirLevel].match(regName)
       if (name == null) {
         for (let i = 1; i < dirLevel; i++) {
           dirLevel -= 1
@@ -165,7 +165,7 @@ export default {
         size: size,
         fileName: fileName,
         path: pathUtil.dirname(path.substring(2)), // 去掉盘符 如 D:\\桌面\\text.txt => \\桌面
-        ext: pathUtil.extname(path)
+        ext: pathUtil.extname(path).toLowerCase()
       }
     },
     _openFullScreen (isOpen) { // 打开全屏遮罩

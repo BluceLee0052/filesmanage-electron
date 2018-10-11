@@ -24,7 +24,7 @@
         </element-judge>
       </template>
       <el-form-item v-else-if="dataForm.operatMode == 'import'" label="导入文件" prop="files" :rules="{ type: 'array', required: true, message: ' ', trigger: 'change' }">
-        <import-file v-model="dataForm._files"></import-file>
+        <import-file v-model="dataForm.files"></import-file>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="submitForm('dataForm')">{{btnName}}</el-button>
@@ -37,6 +37,8 @@
 <script>
 import ImportFile from './ImportPage/ImportFile'
 import ElementJudge from './CommonPage/ElementJudge'
+import path from 'path'
+import XLSX from 'xlsx'
 
 export default {
   components: {
@@ -49,7 +51,7 @@ export default {
       btnName: '导入',
       templates: [],
       ruleForm: {
-        templateKey: '',
+        templateKey: 'default',
         operatMode: 'import'
       },
       rules: {
@@ -91,34 +93,55 @@ export default {
             } else {
               that.btnName = '保存'
             }
-            that.$dbFormTemplate.find({ key: that.ruleForm.templateKey }, { elements: 1, _id: 0 }, (wrong, docs) => {
-              var elements = docs[0]['elements']
-
-              if (!elements) {
-                elements = []
-              }
-              that.dataForm.elements = elements
-            })
+            that.$store.dispatch('loadElementsByKey', that.ruleForm.templateKey)
+            that.dataForm.elements = that.$store.state.FormTemplate.elements
           } else if (formName === 'dataForm') {
             that._openFullScreen(true)
-            setTimeout(() => {
-              that.$db.insert(this.dataForm.files, (wrong) => {
-                that._openFullScreen(false)
-                if (!wrong) {
-                  that.resetForm(formName)
-                  that.$message({
-                    message: '数据处理成功...',
-                    type: 'success',
-                    center: true
-                  })
-                } else {
-                  that.$message({
-                    message: '数据处理失败...',
-                    type: 'error',
-                    center: true
-                  })
+            for (let file of this.dataForm.files) {
+              const elementsTemplate = that.$store.state.FormTemplate.elements
+              const ext = path.extname(file).toLowerCase()
+              if (ext === '.xlsx' || ext === '.xls') {
+                let wb = XLSX.readFile(file)
+                for (const sheetName of wb.SheetNames) {
+                  let sheet = wb.Sheets[sheetName]
+                  console.dir(sheet)
+                  if (sheet['!ref']) { // 数据范围 存在，证明有数据
+                    let datas = XLSX.utils.sheet_to_json(sheet)
+                    for (let i = 0; i < datas.length; i++) { // 行数据
+                      const data = datas[i]
+                      // 获取模板元素field, 当作excel的标题获取值
+                      for (let j = 0; j < elementsTemplate.length; j++) { // 列数据
+                        const ele = elementsTemplate[j]
+                        const val = data[ele.field] || ele.value
+
+                        if (ele.isRequired && !val) { // 必填
+                          console.log(`行：${i + 1}，列：${j + 1}`)
+                        }
+                      }
+                    }
+                  }
                 }
-              })
+              }
+            }
+            that._openFullScreen(false)
+            setTimeout(() => {
+              // that.$db.insert(this.dataForm.files, (wrong) => {
+              //   that._openFullScreen(false)
+              //   if (!wrong) {
+              //     that.resetForm(formName)
+              //     that.$message({
+              //       message: '数据处理成功...',
+              //       type: 'success',
+              //       center: true
+              //     })
+              //   } else {
+              //     that.$message({
+              //       message: '数据处理失败...',
+              //       type: 'error',
+              //       center: true
+              //     })
+              //   }
+              // })
             }, 200)
           }
         } else {
