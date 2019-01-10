@@ -51,7 +51,7 @@ export default {
       btnName: '导入',
       templates: [],
       ruleForm: {
-        templateKey: 'default',
+        templateKey: '',
         operatMode: 'import'
       },
       rules: {
@@ -145,11 +145,21 @@ export default {
             }, 200)
           }
         } else {
-          that.$message({
-            message: '表单验证失败...',
-            type: 'error',
-            center: true
-          })
+          if (that.templates.length === 0) { // 模板为空
+            that.$confirm('没有模板，现在配置模板吗?', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }).then(() => {
+              that.$emit('addTab', 'FormConfigPage')
+            }).catch(() => { console.log('ssssssssss') })
+          } else {
+            that.$message({
+              message: '表单验证失败...',
+              type: 'error',
+              center: true
+            })
+          }
         }
       })
     },

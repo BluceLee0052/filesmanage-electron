@@ -9,10 +9,7 @@
           <li title="导入数据" @click="addTab('ImportPage')">
             <i class="el-icon-upload"></i>
           </li>
-          <li title="导入文件路径" @click="addTab('ImportPathsPage')">
-            <i class="el-icon-tickets"></i>
-          </li>
-          <li @click="addTab('FormConfigPage')">
+          <li title="配置模板" @click="addTab('FormConfigPage')">
             <i class="el-icon-setting"></i>
           </li>
         </ul>
@@ -24,7 +21,7 @@
         <el-main>
           <el-tabs v-model="activeName" type="card" closable @tab-remove="removeTab">
             <el-tab-pane v-for="(item) in tabs" :key="item.name" :label="item.title" :name="item.name">
-              <component :is=item.content></component>
+              <component :is=item.content @addTab="addTab"></component>
             </el-tab-pane>
           </el-tabs>
         </el-main>
@@ -37,12 +34,11 @@
 <script>
 import SearchPage from './SearchPage'
 import ImportPage from './ImportPage'
-import ImportPathsPage from './ImportPathsPage'
 import FormConfigPage from './FormConfigPage'
 
 export default {
   name: 'home-page',
-  components: { SearchPage, ImportPage, ImportPathsPage, FormConfigPage },
+  components: { SearchPage, ImportPage, FormConfigPage },
   data () {
     return {
       activeName: '1',
@@ -72,10 +68,8 @@ export default {
         obj = { title: '搜索', name: 'SearchPage', content: SearchPage }
       } else if (name === 'ImportPage') {
         obj = { title: '导入数据', name: 'ImportPage', content: ImportPage }
-      } else if (name === 'ImportPathsPage') {
-        obj = { title: '导入文件路径', name: 'ImportPathsPage', content: ImportPathsPage }
       } else if (name === 'FormConfigPage') {
-        obj = { title: '配置表单', name: 'FormConfigPage', content: FormConfigPage }
+        obj = { title: '配置模板', name: 'FormConfigPage', content: FormConfigPage }
       } else {
         return false
       }
